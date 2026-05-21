@@ -1,20 +1,18 @@
-# 🔥 LAB12 – ROOT DETECTION BYPASS
+# 🔥 LAB12 – ROOT DETECTION BYPASS  
 
-**Author:** EL YAMANI OMAYMA
+> EL YAMANI OMAYMA
 
 ---
 
-## ⚠️ Disclaimer
-
-This lab documents **offensive security techniques** for **authorized testing only**.  
+This lab documents **offensive security techniques** for authorized testing only.  
 The target is **DIVA** (`jakhar.aseem.diva`), a deliberately vulnerable Android application.  
-**Goal:** Force the app to believe it runs on a non-rooted device while operating in a fully compromised environment.
+The goal: **force the app to believe it runs on a non-rooted device** while the environment is fully compromised.
 
 ---
 
 ## PHASE 0 – Reconnaissance & Connectivity
 
-### 0.1 ADB – Establish Device Connection
+### 0.1 ADB – The Bridge to Hell
 
 ```bash
 PS C:\Users\pc> adb devices
@@ -23,15 +21,16 @@ emulator-5554    device
 ```
 
 **Interpretation:**
-- ✅ Emulator is active
-- ✅ ADB channel is open
-- ✅ Communication pipeline established
+- The emulator is breathing. ADB channel is open. We own the pipe.
+
+![ADB Devices Connected](https://github.com/user-attachments/assets/a977aae6-fdfa-49d9-9706-2f2b5b482921)
 
 ---
 
 ## PHASE 1 – Weapon Deployment (Medusa)
 
-Clone the Medusa repository:
+Two cloning attempts – one intentional typo (Chopin vs Ch0pin).
+The correct repository was successfully forked.
 
 ```bash
 git clone https://github.com/Ch0pin/medusa.git
@@ -42,62 +41,69 @@ git clone https://github.com/Ch0pin/medusa.git
 - ✅ 53.08 MiB transferred
 - ✅ 2639 deltas resolved
 
+![Medusa Clone Success 1](https://github.com/user-attachments/assets/7bd59513-2312-42fd-be97-0093b0a810c8)
+
+![Medusa Clone Success 2](https://github.com/user-attachments/assets/25f352cb-7662-4490-bb49-c9d666380752)
+
 ---
 
 ## PHASE 2 – Frida Asset Inventory
 
-List running processes with Frida:
+Command:
 
 ```bash
 frida-ps -U
 ```
 
-**Target Process Table:**
+**Target acquisition:**
 
 | PID  | Process       | Status        |
 |------|---------------|---------------|
-| 6989 | Diva          | 🎯 **ACQUIRED** |
-| 6747 | Messaging     | Collateral    |
-| 4184 | RoomMVVDemo   | Collateral    |
-| 7049 | adbd          | Daemon        |
+| 6989 | Diva          | 🎯 ACQUIRED   |
+| 6747 | Messaging     | collateral    |
+| 4184 | RoomMVVDemo   | collateral    |
+| 7049 | adbd          | daemon        |
 
-**Conclusion:** Frida successfully detects the target. Injection path is clear.
+**Conclusion:** Frida sees the target. Injection path is clear.
+
+![Frida Process List](https://github.com/user-attachments/assets/ff80c03f-1899-4e09-9534-2218f470fad6)
 
 ---
 
 ## PHASE 3 – Medusa Initialization & Device Binding
 
-Initialize Medusa with target package:
-
 ```bash
 python medusa.py -p owasp.mstg.uncrackable2
 ```
 
-**Device Selection Menu:**
+Medusa loads 124 modules. The device selection menu appears:
 
-| Index | Device        | Type   |
-|-------|---------------|--------|
-| 0     | Local System  | local  |
-| 1     | Local Socket  | remote |
-| 2     | GDB Remote    | remote |
-| 3     | emulator-5554 | **usb** ✅ |
+| Index | Device            | Type   |
+|-------|-------------------|--------|
+| 0     | Local System      | local  |
+| 1     | Local Socket      | remote |
+| 2     | GDB Remote Stub   | remote |
+| 3     | emulator-5554 ✅  | usb    |
 
-**Selection:** 3 → **Binding: Successful**
+**Selection:** 3  
+**Binding:** successful.
+
+![Medusa Device Selection](https://github.com/user-attachments/assets/318d0e1b-3c7b-40db-b419-866d5e629098)
 
 ---
 
-## PHASE 4 – System Forensics (Build Properties)
+## PHASE 4 – System Forensics (Ro.build.tags)
 
-Medusa extracts device properties:
+Medusa leaks device properties:
 
-| Property                  | Value          | Risk Level   |
-|---------------------------|----------------|--------------|
-| ro.product.manufacturer   | unknown        | ⚠️ Suspicious |
-| ro.build.version.release  | 11             | ✅ Acceptable |
-| ro.build.tags             | test-keys      | 🔴 **ROOT DETECTED** |
-| ro.build.security_patch   | 2026-05-15     | ✅ Recent    |
+| Property                  | Value          | Risk Indicator       |
+|---------------------------|----------------|----------------------|
+| ro.product.manufacturer   | unknown        | ⚠️ suspicious        |
+| ro.build.version.release  | 11             | acceptable           |
+| ro.build.tags             | test-keys      | 🔴 ROOT DETECTED     |
+| ro.build.security_patch   | 2026-05-15     | recent               |
 
-**Third-party Applications Detected:**
+**Third-party applications detected:**
 
 ```
 [0] projet.fst.ma.roommvvmdemo
@@ -110,21 +116,28 @@ Medusa extracts device properties:
 [7] jakhar.aseem.diva  ← TARGET CONFIRMED
 ```
 
-**Critical Finding:** `test-keys` indicates system compiled with debug credentials. This is the primary signature most root detectors scan for.
+**Red flag:** `test-keys` = system compiled with debug credentials.  
+This is the primary signature most root detectors scan for.
+
+![System Properties Leakage](https://github.com/user-attachments/assets/5b7f29a1-fbea-4b3c-ab0f-78e923db36d9)
 
 ---
 
 ## PHASE 5 – Target Execution
 
-Launch the target application:
-
 ```bash
 (emulator-5554) medusa> run jakhar.aseem.diva
 ```
 
-**DIVA Application Menu:**
+![Target Execution Command](https://github.com/user-attachments/assets/ffa15437-b1c9-4ab3-a097-d4cc2000e290)
+
+DIVA surfaces with its full menu:
+
+![DIVA Application Menu](https://github.com/user-attachments/assets/c5eb9ded-8fcd-4df6-98b5-489ebe071424)
 
 ```
+# Diva – Welcome to the Arena
+
 1. INSECURE LOGGING
 2. HARDCODING ISSUES – PART 1
 3. INSECURE DATA STORAGE – PART 1
@@ -142,32 +155,35 @@ Launch the target application:
 
 ---
 
-## PHASE 6 – Root Detection Mechanisms
+## PHASE 6 – Root Detection Mechanisms (Adversary Simulation)
 
 Modern Android root detectors scan for:
 
-| Vector              | Detection Method                      |
-|---------------------|---------------------------------------|
-| Build Properties    | `Build.TAGS` contains `test-keys`?    |
-| Binary Presence     | `File.exists("/system/bin/su")`       |
-| Binary Presence     | `File.exists("/system/xbin/su")`      |
-| Command Execution   | `Runtime.exec("su")`                  |
-| Library Check       | `RootBeer.isRooted()`                 |
-| Mount Points        | `/proc/mounts` contains `su`?         |
-| Native Calls        | `open()`, `access()`, `stat()` checks |
+| Vector              | Detection Method                  |
+|---------------------|-----------------------------------|
+| Build.TAGS          | Contains test-keys?               |
+| Binary presence     | File.exists("/system/bin/su")     |
+| Binary presence     | File.exists("/system/xbin/su")    |
+| Command execution   | Runtime.exec("su")                |
+| Library check       | RootBeer.isRooted()               |
+| Mount points        | /proc/mounts contains su?         |
+| Native calls        | open(), access(), stat() on paths |
 
-**Bypass Strategy:** Hook every detection vector and return non-rooted responses.
+**Our bypass strategy:** Hook every single one of these checks and return non-rooted responses.
 
 ---
 
 ## PHASE 7 – The Bypass Arsenal
 
-### Primary Weapon: Frida Injection
+### Primary weapon: Frida (Medusa fallback)
 
-**File:** `inject_oblivion.js`
+Medusa lacked an explicit root-bypass module in this build.  
+Switched to raw Frida injection – more control, less noise.
+
+### inject_oblivion.js – Full Bypass Script
 
 ```javascript
-// inject_oblivion.js - Full Root Detection Bypass Script
+// inject_oblivion.js
 Java.perform(function() {
     console.log("[*] Oblivion engine initialized.");
 
@@ -203,7 +219,7 @@ Java.perform(function() {
         };
     } catch(e) { console.error("[✗] File hook failed:", e); }
 
-    // 3. Runtime.exec – Block su command execution
+    // 3. Runtime.exec – suicide prevention
     try {
         var Runtime = Java.use('java.lang.Runtime');
         Runtime.exec.overload('java.lang.String').implementation = function(cmd) {
@@ -236,7 +252,7 @@ Java.perform(function() {
 frida -U -f jakhar.aseem.diva -l inject_oblivion.js --no-pause
 ```
 
-### Expected Console Output
+### Expected console output:
 
 ```
 [*] Oblivion engine initialized.
@@ -250,14 +266,14 @@ frida -U -f jakhar.aseem.diva -l inject_oblivion.js --no-pause
 
 ## PHASE 8 – Validation Matrix
 
-| Checkpoint                        | Pre-Injection     | Post-Injection        |
-|-----------------------------------|-------------------|-----------------------|
-| Root detection alert              | 🔴 Detected       | 🟢 Not detected       |
-| Build.TAGS value                  | `test-keys`       | `release-keys`        |
-| File.exists("/system/bin/su")     | `true`            | `false` (hooked)      |
-| Runtime.exec("su")                | Executes          | Returns `null`        |
-| RootBeer.isRooted() (if present)  | `true`            | `false` (hooked)      |
-| Application functionality         | Degraded          | Fully operational     |
+| Checkpoint                       | Pre-Injection   | Post-Injection          |
+|----------------------------------|-----------------|-------------------------|
+| Root detection alert             | 🔴 Detected     | 🟢 Not detected         |
+| Build.TAGS value                 | test-keys       | release-keys            |
+| File.exists("/system/bin/su")    | true            | false (hooked)          |
+| Runtime.exec("su")               | executes        | returns null            |
+| RootBeer.isRooted() (if present) | true            | false (hooked)          |
+| Application functionality        | degraded        | fully operational       |
 
 ---
 
@@ -265,42 +281,37 @@ frida -U -f jakhar.aseem.diva -l inject_oblivion.js --no-pause
 
 If the target implements Frida detection:
 
-| Detection Method        | Countermeasure                              |
-|-------------------------|---------------------------------------------|
-| Port scanning (27042)   | Use frida-server on alternative port        |
-| D-Bus detection         | Patch or rename frida-server binary         |
-| Thread enumeration      | Hook `Thread.getStackTrace()`               |
-| String scanning         | Recompile Frida with custom string table    |
-| Memory scanning (gum-js)| Use Gadget injection instead of server      |
+| Detection Method          | Countermeasure                                |
+|---------------------------|-----------------------------------------------|
+| Port scanning (27042)     | Use frida-server on alternative port          |
+| D-Bus detection           | Patch or rename frida-server binary           |
+| Thread enumeration        | Hook Thread.getStackTrace()                   |
+| String scanning ("frida") | Recompile Frida with custom string table      |
+| Memory scanning (gum-js)  | Use Gadget injection instead of server        |
 
-**Current Status:** DIVA has no anti-Frida protections. Direct injection works without obstruction.
+**Current status:** DIVA has no anti-Frida protections. Direct injection works.
 
 ---
 
 ## PHASE 10 – Conclusion & Operational Learnings
 
-### What Worked ✅
+### What worked:
 
 - ✅ ADB → Frida → Medusa pipeline established
-- ✅ Target enumeration via `frida-ps` and Medusa module loader
-- ✅ Root indicators identified (`test-keys`, su paths)
+- ✅ Target enumeration via frida-ps and Medusa module loader
+- ✅ Root indicators identified (test-keys, su paths)
 - ✅ Custom Frida script bypassed all root checks
 - ✅ Application runs without root warnings
 - ✅ Full functionality restored on compromised environment
 
-### Key Takeaways
+---
+
+## Key Takeaways
 
 1. **Root detection is hookable** – Java-level checks are interceptable by Frida
 2. **Build properties are mutable** – Property spoofing is trivial
-3. **File system checks need comprehensive patching** – Multiple paths and methods must be covered
+3. **File system checks need comprehensive patching** – Multiple paths must be covered
 4. **Defense-in-depth is necessary** – Single-vector detection is insufficient
 5. **Runtime monitoring** – Continuous hook injection defeats static protections
 
 ---
-
-## References
-
-- [Frida Documentation](https://frida.re/)
-- [Medusa Framework](https://github.com/Ch0pin/medusa)
-- [DIVA Application](https://github.com/jakhar/DIVA-Android)
-- [Android Security Best Practices](https://developer.android.com/privacy-and-security)
