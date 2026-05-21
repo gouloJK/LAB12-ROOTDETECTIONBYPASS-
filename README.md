@@ -1,4 +1,4 @@
-# 🔥 LAB12 – ROOT DETECTION BYPASS  
+# LAB12 – ROOT DETECTION BYPASS  
 
 > EL YAMANI OMAYMA
 
@@ -12,7 +12,7 @@ The goal: **force the app to believe it runs on a non-rooted device** while the 
 
 ## PHASE 0 – Reconnaissance & Connectivity
 
-### 0.1 ADB – The Bridge to Hell
+### 0.1 ADB – Establish Device Connection
 
 ```bash
 PS C:\Users\pc> adb devices
